@@ -1,0 +1,29 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Bvz",
+      "email": "asdd@ga.com",
+      "password": "zse4csq1",
+      "createdAt": "2025-12-05T08:28:53.753Z",
+      "role": "user"
+    },
+    {
+      "id": "2",
+      "name": "dqwdqwdq",
+      "email": "qwdwq@dad.re",
+      "password": "zse4csq1",
+      "createdAt": "2025-12-05T08:55:04.286Z",
+      "role": "user"
+    },
+    {
+      "id": 3,
+      "name": "цвйвцй",
+      "email": "faefaedada@a.com",
+      "password": "zse4csq1",
+      "createdAt": "2025-12-05T10:27:43.221Z",
+      "role": "user"
+    }
+  ],
+  "feedbacks": []
+}

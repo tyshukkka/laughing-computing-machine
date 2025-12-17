@@ -1,0 +1,17 @@
+.navigation {
+  background-color: #34495e;
+  padding: 10px 0;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  gap: 20px;
+}
+
+.nav-list li {
+  display: inline-block;
+}

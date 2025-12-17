@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input {
+            padding: 8px;
+            width: 200px;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+        }
+        .success {
+            background: #d4ffd4;
+            border: 1px solid green;
+        }
+        .error {
+            background: #ffd4d4;
+            border: 1px solid red;
+        }
+        .notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadNotification" class="notification" style="display: none;">
+        Страница загружена!
+    </div>
+
+    <div class="section">
+        <h2>Счетчик</h2>
+        <div class="counter">
+            <button onclick="plus()">Увеличить (+1)</button>
+            <span id="count">0</span>
+            <button id="minusButton">Уменьшить (-1)</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Вход</h2>
+        <form id="authForm">
+            <div class="form-group">
+                <input type="text" id="login" placeholder="Логин">
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Пароль">
+            </div>
+            <div>
+                <button type="button" onclick="clearForm()">Очистить</button>
+                <button type="submit">Войти</button>
+            </div>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            document.getElementById('loadNotification').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('loadNotification').style.display = 'none';
+            }, 2000);
+        });
+
+        let count = 0;
+        
+        function plus() {
+            count++;
+            document.getElementById('count').textContent = count;
+        }
+
+        document.getElementById('minusButton').addEventListener('click', function() {
+            count--;
+            document.getElementById('count').textContent = count;
+        });
+
+        const form = document.getElementById('authForm');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const login = document.getElementById('login').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+            
+            if (login === 'admin' && password === 'admin') {
+                message.textContent = 'Успешный вход!';
+                message.className = 'message success';
+                localStorage.setItem('login', login);
+                localStorage.setItem('password', password);
+            } else {
+                message.textContent = 'Ошибка входа';
+                message.className = 'message error';
+            }
+        });
+
+        function clearForm() {
+            form.reset();
+            const message = document.getElementById('message');
+            message.textContent = '';
+            message.className = 'message';
+            }
+
+        function autoFill() {
+            const savedLogin = localStorage.getItem('login');
+            const savedPassword = localStorage.getItem('password');
+            
+            if (savedLogin && savedPassword) {
+                document.getElementById('login').value = savedLogin;
+                document.getElementById('password').value = savedPassword;
+            }
+        }
+
+        window.addEventListener('load', autoFill);
+    </script>
+</body>
+</html>
