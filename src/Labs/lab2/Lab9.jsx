@@ -421,12 +421,6 @@ const Lab9 = () => {
           >
             Сымитировать ошибку
           </button>
-          <button
-            onClick={handleLazyLoad}
-            style={{ ...styles.button, backgroundColor: "#9c27b0" }}
-          >
-            Ленивая загрузка
-          </button>
         </div>
       </div>
 
