@@ -57,13 +57,14 @@ const LoginForm = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      // Инициализируем users если пусто
-      if (!localStorage.getItem("users")) {
-        localStorage.setItem("users", JSON.stringify([]));
-      }
+      // Проверяем в двух местах для совместимости
+      const regularUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const lab8Users = JSON.parse(localStorage.getItem("lab8_users") || "[]");
 
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
-      const user = users.find(
+      // Объединяем пользователей
+      const allUsers = [...regularUsers, ...lab8Users];
+
+      const user = allUsers.find(
         (u) => u.email === formData.email && u.password === formData.password
       );
 
@@ -74,12 +75,12 @@ const LoginForm = ({ onLogin }) => {
           email: user.email,
           createdAt: user.createdAt,
           role: user.role || "user",
+          status: user.status || "active",
         };
 
         localStorage.setItem("currentUser", JSON.stringify(userInfo));
         sessionStorage.setItem("currentUser", JSON.stringify(userInfo));
 
-        // Вызываем колбэк
         if (onLogin) {
           onLogin(userInfo);
         }
