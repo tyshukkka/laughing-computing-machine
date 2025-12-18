@@ -25,6 +25,158 @@ const useIsMobile = () => {
   }, []);
   return isMobile;
 };
+const isUserFeedback = (feedbackEmail) => {
+  return currentUser && currentUser.email === feedbackEmail;
+};
+
+// Проверяем права доступа
+const hasAdminAccess = () => {
+  return currentUser && currentUser.role === "admin";
+};
+
+// Функция для рендеринга отзывов в режиме чтения
+const renderFeedbackReadOnly = () => {
+  const cardStyle = {
+    backgroundColor: theme === "light" ? "#f8f9fa" : "#2c3e50",
+    border: `1px solid ${theme === "light" ? "#dee2e6" : "#34495e"}`,
+    borderRadius: "8px",
+    padding: "20px",
+    marginBottom: "20px",
+  };
+
+  const buttonStyle = (color) => ({
+    padding: "10px 15px",
+    backgroundColor: color,
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "normal",
+  });
+
+  return (
+    <div style={cardStyle}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+        <h4 style={{ margin: 0 }}>Все отзывы ({feedbacks.length})</h4>
+        <button
+          onClick={() => (window.location.href = "/lab5")}
+          style={buttonStyle("#2ecc71")}
+        >
+          Оставить отзыв
+        </button>
+      </div>
+
+      {feedbacks.length === 0 ? (
+        <p style={{ textAlign: "center", padding: "20px" }}>
+          Пока нет отзывов. Будьте первым!
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+          {feedbacks.map((feedback, index) => (
+            <div
+              key={feedback.id}
+              style={{
+                padding: "15px",
+                border: `1px solid ${
+                  theme === "light" ? "#dee2e6" : "#34495e"
+                }`,
+                borderRadius: "6px",
+                backgroundColor: theme === "light" ? "#ffffff" : "#34495e",
+                borderLeft: `4px solid ${
+                  isUserFeedback(feedback.userEmail || feedback.email)
+                    ? "#3498db"
+                    : "#27ae60"
+                }`,
+              }}
+            >
+              {isUserFeedback(feedback.userEmail || feedback.email) && (
+                <div
+                  style={{
+                    backgroundColor: "#3498db",
+                    color: "white",
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    display: "inline-block",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Ваш отзыв
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "10px",
+                }}
+              >
+                <div>
+                  <strong>{feedback.userName || feedback.author}</strong>
+                  <div style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                    {feedback.userEmail || feedback.email}
+                  </div>
+                </div>
+                <div style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                  {new Date(
+                    feedback.createdAt || feedback.date
+                  ).toLocaleDateString("ru-RU")}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "10px" }}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      color: i < feedback.rating ? "#f39c12" : "#bdc3c7",
+                      fontSize: "18px",
+                    }}
+                  >
+                    ★
+                  </span>
+                ))}
+                <span style={{ marginLeft: "10px" }}>{feedback.rating}/5</span>
+              </div>
+
+              <p style={{ marginBottom: "15px" }}>{feedback.message}</p>
+
+              <div style={{ display: "flex", gap: "10px", fontSize: "12px" }}>
+                <span style={{ color: "#7f8c8d" }}>ID: {feedback.id}</span>
+                {hasAdminAccess() && (
+                  <button
+                    onClick={() => handleDeleteFeedback(feedback.id)}
+                    style={{
+                      padding: "2px 6px",
+                      backgroundColor: theme === "dark" ? "#e74c3c" : "#dc3545",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "10px",
+                    }}
+                  >
+                    Удалить
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Компонент заголовка колонки с перетаскиванием
 const DraggableColumnHeader = ({
@@ -220,17 +372,35 @@ const initializeData = () => {
     createdAt: new Date().toISOString(),
   };
 
+  // Инициализируем общий массив users в localStorage
   if (
-    !localStorage.getItem("lab8_users") ||
-    JSON.parse(localStorage.getItem("lab8_users")).length === 0
+    !localStorage.getItem("users") ||
+    JSON.parse(localStorage.getItem("users")).length === 0
   ) {
-    localStorage.setItem("lab8_users", JSON.stringify([adminUser]));
+    localStorage.setItem("users", JSON.stringify([adminUser]));
   }
+
+  // Также добавляем в lab8_users для совместимости
+  localStorage.setItem("lab8_users", JSON.stringify([adminUser]));
+
+  // Синхронизация отзывов
+  const feedbacks = JSON.parse(localStorage.getItem("feedbacks") || "[]");
+  const lab8Feedbacks = JSON.parse(
+    localStorage.getItem("lab8_feedbacks") || "[]"
+  );
+
+  // Если есть отзывы в feedbacks, но нет в lab8_feedbacks - копируем
+  if (feedbacks.length > 0 && lab8Feedbacks.length === 0) {
+    localStorage.setItem("lab8_feedbacks", JSON.stringify(feedbacks));
+  }
+  // Если есть отзывы в lab8_feedbacks, но нет в feedbacks - копируем
+  else if (lab8Feedbacks.length > 0 && feedbacks.length === 0) {
+    localStorage.setItem("feedbacks", JSON.stringify(lab8Feedbacks));
+  }
+
+  // Сохраняем текущего пользователя
   if (!localStorage.getItem("currentUser")) {
     localStorage.setItem("currentUser", JSON.stringify(adminUser));
-  }
-  if (!localStorage.getItem("lab8_feedbacks")) {
-    localStorage.setItem("lab8_feedbacks", JSON.stringify([]));
   }
 
   return JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -263,6 +433,8 @@ const Lab8 = () => {
   }, []);
 
   const saveUsers = (newUsers) => {
+    // Сохраняем в оба места для совместимости
+    localStorage.setItem("users", JSON.stringify(newUsers));
     localStorage.setItem("lab8_users", JSON.stringify(newUsers));
     setUsers(newUsers);
   };
@@ -314,7 +486,12 @@ const Lab8 = () => {
       password: "user123",
       createdAt: new Date().toISOString(),
     };
+
     saveUsers([...users, newUser]);
+
+    // Также добавляем в общий массив users
+    const regularUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    localStorage.setItem("users", JSON.stringify([...regularUsers, newUser]));
   };
 
   const handleDeleteFeedback = (feedbackId) => {
@@ -802,7 +979,6 @@ const Lab8 = () => {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Лабораторная работа 8</h2>
-
       <div
         style={{
           display: "flex",
@@ -821,7 +997,6 @@ const Lab8 = () => {
           </button>
         ))}
       </div>
-
       {activeTab === "users" && (
         <div>
           <h3 style={{ marginBottom: "16px" }}>
@@ -855,13 +1030,16 @@ const Lab8 = () => {
           )}
         </div>
       )}
-
       {activeTab === "feedbacks" && (
         <div>
           <h3 style={{ marginBottom: "16px" }}>
-            Управление отзывами ({feedbacks.length})
+            {currentUser?.role === "admin"
+              ? `Управление отзывами (${feedbacks.length})`
+              : `Отзывы пользователей (${feedbacks.length})`}
           </h3>
-          {currentUser.role === "admin" ? (
+
+          {/* Показываем таблицу админам, а обычным пользователям - режим чтения */}
+          {currentUser?.role === "admin" ? (
             feedbacks.length > 0 ? (
               renderTable(feedbackTable, "feedbacks")
             ) : (
@@ -870,18 +1048,121 @@ const Lab8 = () => {
               </div>
             )
           ) : (
-            <div
-              style={{
-                padding: "20px",
-                textAlign: "center",
-                backgroundColor: theme === "dark" ? "#2c3e50" : "#fff3cd",
-                borderRadius: "4px",
-              }}
-            >
-              <p>
-                <strong>Доступ запрещен</strong>
-              </p>
-              <p>Требуются права администратора</p>
+            // Режим чтения для обычных пользователей
+            <div>
+              {feedbacks.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px" }}>
+                  <p>Пока нет отзывов.</p>
+                  <button
+                    onClick={() => (window.location.href = "/lab5")}
+                    style={styles.button}
+                  >
+                    Оставить первый отзыв
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "15px",
+                    marginTop: "20px",
+                  }}
+                >
+                  {feedbacks.map((feedback) => (
+                    <div
+                      key={feedback.id}
+                      style={{
+                        padding: "15px",
+                        border: `1px solid ${
+                          theme === "dark" ? "#34495e" : "#ddd"
+                        }`,
+                        borderRadius: "6px",
+                        backgroundColor:
+                          theme === "dark" ? "#2c3e50" : "#ffffff",
+                        borderLeft: `4px solid ${
+                          currentUser?.email ===
+                          (feedback.userEmail || feedback.email)
+                            ? "#3498db"
+                            : "#27ae60"
+                        }`,
+                      }}
+                    >
+                      {currentUser?.email ===
+                        (feedback.userEmail || feedback.email) && (
+                        <div
+                          style={{
+                            backgroundColor: "#3498db",
+                            color: "white",
+                            padding: "3px 8px",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            display: "inline-block",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          Ваш отзыв
+                        </div>
+                      )}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <div>
+                          <strong>
+                            {feedback.userName || feedback.author}
+                          </strong>
+                          <div style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                            {feedback.userEmail || feedback.email}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                          {new Date(
+                            feedback.createdAt || feedback.date
+                          ).toLocaleDateString("ru-RU")}
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: "10px" }}>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              color:
+                                i < feedback.rating ? "#f39c12" : "#bdc3c7",
+                              fontSize: "18px",
+                            }}
+                          >
+                            ★
+                          </span>
+                        ))}
+                        <span style={{ marginLeft: "10px" }}>
+                          {feedback.rating}/5
+                        </span>
+                      </div>
+
+                      <p style={{ marginBottom: "15px" }}>{feedback.message}</p>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={{ color: "#7f8c8d", fontSize: "12px" }}>
+                          ID: {feedback.id}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
