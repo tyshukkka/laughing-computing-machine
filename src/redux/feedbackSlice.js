@@ -75,19 +75,41 @@ export const {
   resetEditing,
 } = feedbackSlice.actions;
 
+// Функция для синхронизации отзывов между разными хранилищами
+const syncFeedbacks = (feedbacks) => {
+  // Сохраняем в оба хранилища для совместимости
+  localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
+  localStorage.setItem("lab8_feedbacks", JSON.stringify(feedbacks));
+};
+
+// Функция для загрузки отзывов с приоритетом на lab8_feedbacks
+const loadFeedbacks = () => {
+  // Сначала пробуем загрузить из lab8_feedbacks (для совместимости с Lab8)
+  const lab8Saved = localStorage.getItem("lab8_feedbacks");
+  if (lab8Saved) {
+    return JSON.parse(lab8Saved);
+  }
+
+  // Если нет lab8_feedbacks, пробуем загрузить из feedbacks
+  const saved = localStorage.getItem("feedbacks");
+  if (saved) {
+    const feedbacks = JSON.parse(saved);
+    // Синхронизируем в lab8_feedbacks
+    localStorage.setItem("lab8_feedbacks", JSON.stringify(feedbacks));
+    return feedbacks;
+  }
+
+  return [];
+};
+
 // Простые async actions без createAsyncThunk
 export const getFeedbacks = () => async (dispatch) => {
   try {
     dispatch(setLoading(true));
     dispatch(setError(null));
 
-    // Загружаем из localStorage
-    const saved = localStorage.getItem("feedbacks");
-    let feedbacks = [];
-
-    if (saved) {
-      feedbacks = JSON.parse(saved);
-    }
+    // Загружаем из localStorage с синхронизацией
+    const feedbacks = loadFeedbacks();
 
     dispatch(setFeedbacks(feedbacks));
   } catch (error) {
@@ -107,16 +129,21 @@ export const createFeedback = (feedbackData) => async (dispatch) => {
       id: Date.now().toString(),
       date: new Date().toLocaleDateString("ru-RU"),
       timestamp: Date.now(),
+      // Добавляем поля для совместимости с Lab8
+      userName: feedbackData.author,
+      userEmail: feedbackData.email,
+      createdAt: new Date().toISOString(),
     };
 
     // Просто диспатчим без unwrap()
     dispatch(addFeedback(newFeedback));
 
-    // Сохраняем в localStorage
-    const saved = localStorage.getItem("feedbacks");
-    let feedbacks = saved ? JSON.parse(saved) : [];
-    feedbacks.unshift(newFeedback);
-    localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
+    // Загружаем текущие отзывы и добавляем новый
+    const currentFeedbacks = loadFeedbacks();
+    const updatedFeedbacks = [newFeedback, ...currentFeedbacks];
+
+    // Синхронизируем в оба хранилища
+    syncFeedbacks(updatedFeedbacks);
 
     return newFeedback;
   } catch (error) {
@@ -141,22 +168,25 @@ export const editFeedback =
         // Сохраняем оригинальные дату и timestamp
         date: feedback.date || new Date().toLocaleDateString("ru-RU"),
         timestamp: feedback.timestamp || Date.now(),
+        // Добавляем поля для совместимости с Lab8
+        userName: feedback.author,
+        userEmail: feedback.email,
+        createdAt: feedback.createdAt || new Date().toISOString(),
       };
 
       // Обновляем в состоянии
       dispatch(updateFeedback(updatedFeedback));
 
       // Обновляем в localStorage
-      const saved = localStorage.getItem("feedbacks");
-      if (saved) {
-        let feedbacks = JSON.parse(saved);
-        const index = feedbacks.findIndex(
-          (fb) => fb.id.toString() === id.toString()
-        );
-        if (index !== -1) {
-          feedbacks[index] = updatedFeedback;
-          localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
-        }
+      const currentFeedbacks = loadFeedbacks();
+      const index = currentFeedbacks.findIndex(
+        (fb) => fb.id.toString() === id.toString()
+      );
+
+      if (index !== -1) {
+        currentFeedbacks[index] = updatedFeedback;
+        // Синхронизируем в оба хранилища
+        syncFeedbacks(currentFeedbacks);
       }
 
       return updatedFeedback;
@@ -177,12 +207,13 @@ export const removeFeedback = (id) => async (dispatch) => {
     dispatch(deleteFeedback(id));
 
     // Удаляем из localStorage
-    const saved = localStorage.getItem("feedbacks");
-    if (saved) {
-      let feedbacks = JSON.parse(saved);
-      feedbacks = feedbacks.filter((fb) => fb.id.toString() !== id.toString());
-      localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
-    }
+    const currentFeedbacks = loadFeedbacks();
+    const updatedFeedbacks = currentFeedbacks.filter(
+      (fb) => fb.id.toString() !== id.toString()
+    );
+
+    // Синхронизируем в оба хранилища
+    syncFeedbacks(updatedFeedbacks);
 
     return id;
   } catch (error) {
